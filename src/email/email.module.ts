@@ -10,15 +10,12 @@ import { MailerModule } from '@nestjs-modules/mailer';
       useFactory: async (config: ConfigService) => {
         const port = parseInt(config.get('MAIL_PORT'), 10);
         const secure = config.get('MAIL_SECURE') === 'true';
-
-        // Validar configuración coherente
         if (port === 465 && !secure) {
           throw new Error('Puerto 465 requiere MAIL_SECURE=true');
         }
         if (port === 587 && secure) {
           throw new Error('Puerto 587 requiere MAIL_SECURE=false');
         }
-
         return {
           transport: {
             host: config.get('MAIL_HOST'),
