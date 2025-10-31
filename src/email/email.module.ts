@@ -1,14 +1,12 @@
 import { Module } from '@nestjs/common';
 import { EmailService } from './email.service';
 import { EmailController } from './email.controller';
-import { ConfigModule, ConfigService } from '@nestjs/config';
+import { ConfigService } from '@nestjs/config';
 import { MailerModule } from '@nestjs-modules/mailer';
 
 @Module({
   imports: [
-    ConfigModule, // Importar ConfigModule para que ConfigService esté disponible en este módulo
     MailerModule.forRootAsync({
-      imports: [ConfigModule], // <-- AÑADE ESTA LÍNEA
       useFactory: async (config: ConfigService) => {
         const port = parseInt(config.get('MAIL_PORT'), 10);
         const secure = config.get('MAIL_SECURE') === 'true';
