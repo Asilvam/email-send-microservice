@@ -1,25 +1,39 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { MailerService } from '@nestjs-modules/mailer';
+import { ConfigService } from '@nestjs/config';
 import { SendEmailDto } from './dto/send-email.dto';
 
 @Injectable()
 export class EmailService {
   private readonly logger = new Logger(EmailService.name);
-  constructor(private mailerService: MailerService) {}
+
+  constructor(
+    private readonly mailerService: MailerService,
+    private readonly configService: ConfigService,
+  ) {}
 
   async sendEmail(sendEmailDto: SendEmailDto) {
-    const { to, subject, html } = sendEmailDto;
+    const { to, subject, html, fromName } = sendEmailDto;
+    const mailFrom = this.configService.getOrThrow<string>('MAIL_FROM');
+    const defaultFromName = this.configService.get<string>(
+      'MAIL_FROM_NAME',
+      'Email Notifications',
+    );
+    const senderName = fromName?.trim() || defaultFromName;
 
     try {
       await this.mailerService.sendMail({
         to,
         subject,
         html,
+        from: `"${senderName}" <${mailFrom}>`,
       });
       this.logger.log(`Email sent successfully to ${to}`);
     } catch (error) {
-      this.logger.error(`Failed to send email to ${to}: ${error.message}`, error.stack);
-      throw new Error(`Failed to send email: ${error.message}`);
+      const message = error instanceof Error ? error.message : String(error);
+      const stack = error instanceof Error ? error.stack : undefined;
+      this.logger.error(`Failed to send email to ${to}: ${message}`, stack);
+      throw new Error(`Failed to send email: ${message}`);
     }
   }
 }
