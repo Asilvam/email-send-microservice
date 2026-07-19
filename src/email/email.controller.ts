@@ -1,7 +1,7 @@
 import { Body, Controller, Post, Get, Logger } from '@nestjs/common';
 import { EmailService } from './email.service';
 import { SendEmailDto } from './dto/send-email.dto';
-import { ApiOperation, ApiResponse, ApiSecurity, ApiTags } from '@nestjs/swagger';
+import { ApiHeader, ApiOperation, ApiResponse, ApiSecurity, ApiTags } from '@nestjs/swagger';
 import { InternalApiKey } from '../common/decorators/api-key.decorator';
 
 @ApiTags('emails send')
@@ -18,7 +18,7 @@ export class EmailController {
     this.logger.log('Health check endpoint was hit.');
     return {
       status: 'OK',
-      service: 'Email Send Microservice - Club de Tenis Quintero',
+      service: 'Email Send Microservice',
     };
   }
 
@@ -27,6 +27,11 @@ export class EmailController {
     summary: 'Send new email, protected by X-Internal-API-Key header.',
   })
   @ApiSecurity('InternalAuth')
+  @ApiHeader({
+    name: 'X-Internal-API-Key',
+    description: 'Shared internal API key',
+    required: true,
+  })
   @InternalApiKey() // <-- El decorador ahora protege todo el método
   @ApiResponse({
     status: 201,

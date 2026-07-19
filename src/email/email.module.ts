@@ -17,10 +17,7 @@ import { MailerModule } from '@nestjs-modules/mailer';
           throw new Error('Puerto 587 requiere MAIL_SECURE=false');
         }
 
-        const fromName = config.get<string>(
-          'MAIL_FROM_NAME',
-          'Email Notifications',
-        );
+        const fromName = config.get<string>('MAIL_FROM_NAME', 'Email Notifications');
         const fromEmail = config.get<string>('MAIL_FROM');
 
         return {

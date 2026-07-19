@@ -15,10 +15,7 @@ export class EmailService {
   async sendEmail(sendEmailDto: SendEmailDto) {
     const { to, subject, html, fromName } = sendEmailDto;
     const mailFrom = this.configService.getOrThrow<string>('MAIL_FROM');
-    const defaultFromName = this.configService.get<string>(
-      'MAIL_FROM_NAME',
-      'Email Notifications',
-    );
+    const defaultFromName = this.configService.get<string>('MAIL_FROM_NAME', 'Email Notifications');
     const senderName = fromName?.trim() || defaultFromName;
 
     try {
