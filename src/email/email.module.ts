@@ -16,6 +16,10 @@ import { MailerModule } from '@nestjs-modules/mailer';
         if (port === 587 && secure) {
           throw new Error('Puerto 587 requiere MAIL_SECURE=false');
         }
+
+        const fromName = config.get<string>('MAIL_FROM_NAME', 'Email Notifications');
+        const fromEmail = config.get<string>('MAIL_FROM');
+
         return {
           transport: {
             host: config.get('MAIL_HOST'),
@@ -28,7 +32,7 @@ import { MailerModule } from '@nestjs-modules/mailer';
             },
           },
           defaults: {
-            from: `"Club de Tenis Quintero APP" <${config.get('MAIL_FROM')}>`,
+            from: `"${fromName}" <${fromEmail}>`,
           },
         };
       },

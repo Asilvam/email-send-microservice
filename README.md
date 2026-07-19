@@ -1,99 +1,98 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# Email Send Microservice
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+Internal NestJS service for sending transactional HTML email through SMTP.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://coveralls.io/github/nestjs/nest?branch=master" target="_blank"><img src="https://coveralls.io/repos/github/nestjs/nest/badge.svg?branch=master#9" alt="Coverage" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+## API
 
-## Description
+### `GET /email/health`
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+Unauthenticated health check.
 
-## Project setup
-
-```bash
-$ pnpm install
+```json
+{
+  "status": "OK",
+  "service": "Email Send Microservice"
+}
 ```
 
-## Compile and run the project
+### `POST /email/send`
 
-```bash
-# development
-$ pnpm run start
+Sends an email and requires the shared API key in
+`X-Internal-API-Key`.
 
-# watch mode
-$ pnpm run start:dev
-
-# production mode
-$ pnpm run start:prod
+```json
+{
+  "to": "recipient@example.com",
+  "subject": "Appointment update",
+  "html": "<p>Your appointment was updated.</p>",
+  "fromName": "Barber"
+}
 ```
 
-## Run tests
+`fromName` is optional. When omitted, the service uses `MAIL_FROM_NAME`.
+The legacy `X-Api-Key` header remains supported for existing consumers.
 
-```bash
-# unit tests
-$ pnpm run test
+## Environment
 
-# e2e tests
-$ pnpm run test:e2e
+Copy `.env.example` to `.env` and configure:
 
-# test coverage
-$ pnpm run test:cov
+```env
+PORT=3001
+INTERNAL_API_KEY=generate-a-shared-internal-api-key
+MAIL_HOST=smtp.example.com
+MAIL_USER=your-smtp-user
+MAIL_PASSWORD=your-smtp-password
+MAIL_FROM=notifications@example.com
+MAIL_FROM_NAME=Email Notifications
+MAIL_PORT=587
+MAIL_SECURE=false
 ```
 
-## Deployment
+Use `MAIL_SECURE=true` with port `465` and `MAIL_SECURE=false` with port
+`587`.
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
+## Barber integration
 
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+Run this service on port `3001` and configure `barber-back` with:
 
-```bash
-$ pnpm install -g mau
-$ mau deploy
+```env
+EMAIL_SERVICE_URL=http://localhost:3001
+EMAIL_SERVICE_API_KEY=the_same_value_as_INTERNAL_API_KEY
+EMAIL_SERVICE_TIMEOUT_MS=5000
+EMAIL_FROM_NAME=Barber
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+`barber-back` sends branded appointment creation and cancellation templates
+through `POST /email/send`. Template rendering and appointment lifecycle rules
+remain in `barber-back`; this service is responsible only for validating the
+request, authenticating the caller, and delivering the email.
 
-## Resources
+## Install
 
-Check out a few resources that may come in handy when working with NestJS:
+```bash
+pnpm install
+```
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+## Run
 
-## Support
+```bash
+pnpm run start:dev
+```
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+Production:
 
-## Stay in touch
+```bash
+pnpm run build
+pnpm run start:prod
+```
 
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+## Validate
 
-## License
+```bash
+pnpm exec jest --runInBand
+pnpm run build
+pnpm exec eslint "src/**/*.ts"
+```
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+Email requests use a global validation pipe with unknown properties rejected.
+The send endpoint rejects missing or invalid internal API keys.
