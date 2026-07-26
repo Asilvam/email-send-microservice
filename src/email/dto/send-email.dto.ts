@@ -26,6 +26,14 @@ export class SendEmailDto {
   html: string;
 
   @ApiPropertyOptional({
+    description: 'Optional plain-text alternative to the HTML body',
+    example: 'Confirm your reservation at https://example.com/confirm',
+  })
+  @IsOptional()
+  @IsString()
+  text?: string;
+
+  @ApiPropertyOptional({
     description: 'Optional display name for the sender',
     example: 'Barber System',
   })

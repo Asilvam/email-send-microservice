@@ -13,7 +13,7 @@ export class EmailService {
   ) {}
 
   async sendEmail(sendEmailDto: SendEmailDto) {
-    const { to, subject, html, fromName } = sendEmailDto;
+    const { to, subject, html, text, fromName } = sendEmailDto;
     const mailFrom = this.configService.getOrThrow<string>('MAIL_FROM');
     const defaultFromName = this.configService.get<string>('MAIL_FROM_NAME', 'Email Notifications');
     const senderName = fromName?.trim() || defaultFromName;
@@ -24,6 +24,7 @@ export class EmailService {
         subject,
         html,
         from: `"${senderName}" <${mailFrom}>`,
+        ...(text !== undefined ? { text } : {}),
       });
       this.logger.log(`Email sent successfully to ${to}`);
     } catch (error) {

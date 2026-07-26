@@ -51,4 +51,24 @@ describe('EmailService', () => {
       }),
     );
   });
+
+  it('passes the optional plain-text body to the mail provider', async () => {
+    const service = new EmailService(mailerService, configService);
+
+    await service.sendEmail({
+      to: 'client@example.com',
+      subject: 'Confirma tu reserva',
+      html: '<p>Confirma tu reserva</p>',
+      text: 'Confirma tu reserva usando el enlace del correo.',
+      fromName: 'Barber',
+    });
+
+    expect(sendMail).toHaveBeenCalledWith({
+      to: 'client@example.com',
+      subject: 'Confirma tu reserva',
+      html: '<p>Confirma tu reserva</p>',
+      text: 'Confirma tu reserva usando el enlace del correo.',
+      from: '"Barber" <notifications@example.com>',
+    });
+  });
 });
