@@ -1,26 +1,35 @@
+import { Logger } from '@nestjs/common';
 import { MailerService } from '@nestjs-modules/mailer';
 import { ConfigService } from '@nestjs/config';
 import { EmailService } from './email.service';
 
 describe('EmailService', () => {
-  const sendMail = jest.fn().mockResolvedValue(undefined);
-  const mailerService = { sendMail } as unknown as MailerService;
+  let service: EmailService;
+  let sendMail: jest.Mock;
+
   const values: Record<string, string> = {
     MAIL_FROM: 'notifications@example.com',
     MAIL_FROM_NAME: 'Default Sender',
   };
-  const configService = {
-    getOrThrow: jest.fn((key: string) => values[key]),
-    get: jest.fn((key: string, fallback?: string) => values[key] ?? fallback),
-  } as unknown as ConfigService;
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    sendMail = jest.fn().mockResolvedValue({ messageId: 'message-id' });
+    const mailerService = { sendMail } as unknown as MailerService;
+    const configService = {
+      getOrThrow: jest.fn((key: string) => values[key]),
+      get: jest.fn((key: string, fallback?: string) => values[key] ?? fallback),
+    } as unknown as ConfigService;
+
+    service = new EmailService(mailerService, configService);
+    jest.spyOn(Logger.prototype, 'log').mockImplementation();
+    jest.spyOn(Logger.prototype, 'error').mockImplementation();
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
   });
 
   it('uses the sender name supplied by barber-back', async () => {
-    const service = new EmailService(mailerService, configService);
-
     await service.sendEmail({
       to: 'client@example.com',
       subject: 'Confirmación de reserva',
@@ -37,8 +46,6 @@ describe('EmailService', () => {
   });
 
   it('falls back to the configured sender name', async () => {
-    const service = new EmailService(mailerService, configService);
-
     await service.sendEmail({
       to: 'client@example.com',
       subject: 'Test',
@@ -52,9 +59,22 @@ describe('EmailService', () => {
     );
   });
 
-  it('passes the optional plain-text body to the mail provider', async () => {
-    const service = new EmailService(mailerService, configService);
+  it('falls back when the supplied sender name is blank', async () => {
+    await service.sendEmail({
+      to: 'client@example.com',
+      subject: 'Test',
+      html: '<p>Test</p>',
+      fromName: '   ',
+    });
 
+    expect(sendMail).toHaveBeenCalledWith(
+      expect.objectContaining({
+        from: '"Default Sender" <notifications@example.com>',
+      }),
+    );
+  });
+
+  it('passes the optional plain-text body to the mail provider', async () => {
     await service.sendEmail({
       to: 'client@example.com',
       subject: 'Confirma tu reserva',
@@ -70,5 +90,29 @@ describe('EmailService', () => {
       text: 'Confirma tu reserva usando el enlace del correo.',
       from: '"Barber" <notifications@example.com>',
     });
+  });
+
+  it('throws a contextual error when the mail provider fails', async () => {
+    sendMail.mockRejectedValue(new Error('SMTP unavailable'));
+
+    await expect(
+      service.sendEmail({
+        to: 'recipient@example.com',
+        subject: 'Test subject',
+        html: '<p>Test body</p>',
+      }),
+    ).rejects.toThrow('Failed to send email: SMTP unavailable');
+  });
+
+  it('normalizes non-Error provider failures', async () => {
+    sendMail.mockRejectedValue('SMTP unavailable');
+
+    await expect(
+      service.sendEmail({
+        to: 'recipient@example.com',
+        subject: 'Test subject',
+        html: '<p>Test body</p>',
+      }),
+    ).rejects.toThrow('Failed to send email: SMTP unavailable');
   });
 });

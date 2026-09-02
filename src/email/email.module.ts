@@ -4,38 +4,39 @@ import { EmailController } from './email.controller';
 import { ConfigService } from '@nestjs/config';
 import { MailerModule } from '@nestjs-modules/mailer';
 
+export async function createMailerOptions(config: ConfigService) {
+  const port = parseInt(config.get('MAIL_PORT'), 10);
+  const secure = config.get('MAIL_SECURE') === 'true';
+  if (port === 465 && !secure) {
+    throw new Error('Puerto 465 requiere MAIL_SECURE=true');
+  }
+  if (port === 587 && secure) {
+    throw new Error('Puerto 587 requiere MAIL_SECURE=false');
+  }
+  const fromName = config.get<string>('MAIL_FROM_NAME', 'Email Notifications');
+  const fromEmail = config.get<string>('MAIL_FROM');
+
+  return {
+    transport: {
+      host: config.get('MAIL_HOST'),
+      pool: true,
+      port,
+      secure,
+      auth: {
+        user: config.get('MAIL_USER'),
+        pass: config.get('MAIL_PASSWORD'),
+      },
+    },
+    defaults: {
+      from: `"${fromName}" <${fromEmail}>`,
+    },
+  };
+}
+
 @Module({
   imports: [
     MailerModule.forRootAsync({
-      useFactory: async (config: ConfigService) => {
-        const port = parseInt(config.get('MAIL_PORT'), 10);
-        const secure = config.get('MAIL_SECURE') === 'true';
-        if (port === 465 && !secure) {
-          throw new Error('Puerto 465 requiere MAIL_SECURE=true');
-        }
-        if (port === 587 && secure) {
-          throw new Error('Puerto 587 requiere MAIL_SECURE=false');
-        }
-
-        const fromName = config.get<string>('MAIL_FROM_NAME', 'Email Notifications');
-        const fromEmail = config.get<string>('MAIL_FROM');
-
-        return {
-          transport: {
-            host: config.get('MAIL_HOST'),
-            pool: true,
-            port,
-            secure,
-            auth: {
-              user: config.get('MAIL_USER'),
-              pass: config.get('MAIL_PASSWORD'),
-            },
-          },
-          defaults: {
-            from: `"${fromName}" <${fromEmail}>`,
-          },
-        };
-      },
+      useFactory: createMailerOptions,
       inject: [ConfigService],
     }),
   ],
