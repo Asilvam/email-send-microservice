@@ -174,6 +174,33 @@ npm run test:cov
 
 ## Deployment
 
+### Dominio CTQ (2026-10-29)
+
+El frontend CTQ tambien esta disponible en `https://ctq.serviciosasm.cl`.
+El backend construye el enlace de recuperacion usando su variable existente
+`PASSWORD_RESET_FRONTEND_URL=https://ctq.serviciosasm.cl/restablecer-contrasena`
+y entrega a este servicio el contenido HTML/texto. No duplicar la URL del
+frontend ni las reglas de tokens/vencimiento en este microservicio.
+
+El transporte mantiene exactamente los enlaces recibidos, incluido el fragmento
+`#token=...`. Esto se verifica en `src/email/email.service.spec.ts` usando un
+mailer simulado; no envia un correo real. No se modificaron config vars, SMTP,
+remitente, claves internas ni credenciales de Heroku, ni se reinicio/desplego este
+servicio por el cambio de dominio. `.env.example` agrega solo esta aclaracion.
+
+La entrega real a un destinatario autorizado y el recorrido completo del enlace
+pertenecen a la etapa 3. Informe central:
+`tennis-court-front/docs/mejora-ctq-cloudflare.md`.
+
+Etapa 3 (2026-10-29): suite completa repetida, **30 pruebas en 7 suites,
+sin omisiones**. La recuperacion integrada recorrio servicio de backend,
+plantilla, guard de clave interna y este transporte con `sendMail` simulado,
+usando usuarios y tokens de un replica set local descartable. Se verificaron
+fragmento del enlace, cambio de contrasena fixture, login posterior, consumo
+unico y expiracion. Esto no certifica entrega SMTP real a una casilla: no se
+envio correo real, no se cambio ningun secreto y no hubo despliegue/config
+adicional. Ver `tennis-court-front/docs/ctq-cloudflare-stage3-validacion.md`.
+
 El proyecto incluye un `Procfile` para plataformas tipo Heroku/Railway:
 
 ```

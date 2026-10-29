@@ -104,6 +104,15 @@ describe('EmailService', () => {
     ).rejects.toThrow('Failed to send email: SMTP unavailable');
   });
 
+  it('delivers the CTQ recovery URL unchanged without knowing a frontend configuration', async () => {
+    const link = 'https://ctq.serviciosasm.cl/restablecer-contrasena#token=isolated-fixture';
+    const html = `<a href="${link}">Restablecer contrasena</a>`;
+    const text = `Restablecer contrasena: ${link}`;
+    await service.sendEmail({ to: 'fixture@example.invalid', subject: 'CTQ recovery fixture', html, text });
+    expect(sendMail).toHaveBeenCalledWith(expect.objectContaining({ html, text }));
+    expect(sendMail).toHaveBeenCalledTimes(1);
+  });
+
   it('normalizes non-Error provider failures', async () => {
     sendMail.mockRejectedValue('SMTP unavailable');
 
